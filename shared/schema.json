@@ -1,0 +1,13 @@
+{
+  "threat": {
+    "id": "string",
+    "timestamp": "2024-01-01T00:00:00",
+    "type": "malware / phishing / vulnerability / exposure",
+    "severity": "low / medium / high / critical",
+    "source": "CVE / Shodan / News / NVD",
+    "product_affected": "BorgWarner product name",
+    "source_ip": "000.000.000.000",
+    "description": "string",
+    "recommendation": "string"
+  }
+}
