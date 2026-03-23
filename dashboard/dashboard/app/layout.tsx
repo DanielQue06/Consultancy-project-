@@ -1,9 +1,9 @@
-
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
+import ChatWidget from "./components/chatbot/ChatWidget";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,6 +24,7 @@ export default function RootLayout({
           <Sidebar />
           <Topbar />
           <main className="ml-[220px] pt-14 p-6">{children}</main>
+          <ChatWidget />
         </div>
       </body>
     </html>
