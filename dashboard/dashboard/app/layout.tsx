@@ -1,4 +1,4 @@
-// app/layout.tsx
+
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -12,16 +12,18 @@ export const metadata: Metadata = {
   description: "Threat Intelligence Dashboard — BorgWarner Gateshead",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-[#06081a] text-white antialiased`}>
-        <Sidebar />
-        <div className="ml-[220px]">
+      <body className={inter.className}>
+        <div className="min-h-screen bg-slate-950 text-white">
+          <Sidebar />
           <Topbar />
-          <main className="pt-16 px-6 py-5">
-            {children}
-          </main>
+          <main className="ml-[220px] pt-14 p-6">{children}</main>
         </div>
       </body>
     </html>

@@ -4,18 +4,27 @@
 import { useState } from "react";
 
 interface Props {
-  counts: { critical: number; medium: number; low: number };
+  counts: { critical: number; high: number; medium: number; low: number };
   total: number;
 }
 
 const SEV = {
   critical: { label: "Critical", color: "#f43f5e" },
+  high:     { label: "High",     color: "#f97316" },
   medium:   { label: "Medium",   color: "#f59e0b" },
   low:      { label: "Low",      color: "#10b981" },
 };
 
 export default function ThreatDonut({ counts, total }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
+
+  if (total === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 text-gray-600">
+        <p className="text-[11px]">No threats detected</p>
+      </div>
+    );
+  }
 
   const segments: { key: string; start: number; end: number; color: string; count: number; label: string }[] = [];
   let angle = 0;
