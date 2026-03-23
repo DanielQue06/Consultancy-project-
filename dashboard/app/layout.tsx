@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
+import ChatWidget from "./components/chatbot/ChatWidget"; // 👈 ADD THIS LINE
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </main>
         </div>
+        <ChatWidget/> {/* 👈 ADD THIS LINE — puts chatbot on every page! */}
       </body>
     </html>
   );
