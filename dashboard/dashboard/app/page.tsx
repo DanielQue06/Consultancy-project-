@@ -7,9 +7,10 @@ import SeverityTrend from "./components/SeverityTrend";
 import AttackRadar from "./components/AttackRadar";
 import CvssDistribution from "./components/CvssDistribution";
 import Link from "next/link";
-
+// this mkaes next.js load fresh data each time 
 export const dynamic = "force-dynamic";
 
+//Defines the shape of one threat objective and all the threats should follow this structure
 interface Threat {
   id: number;
   title: string;
@@ -23,6 +24,8 @@ interface Threat {
   exploit_confirmed: number;
 }
 
+//This function first tries to find threats in the real database 
+// If that doesnt work, it will fallback onto the fake data 
 function getThreats(): Threat[] {
   const dbPath = path.join(process.cwd(), "..", "..", "shared", "borgwarner_threats.db");
   try {
@@ -77,17 +80,20 @@ function getThreats(): Threat[] {
   ];
 }
 
+//Main page this function renders in the dashboard
 export default function DashboardPage() {
   const threats = getThreats();
-
+// counts how many threats exits for each level 
   const counts = {
     critical: threats.filter((t) => t.severity === "critical").length,
     high: threats.filter((t) => t.severity === "high").length,
     medium: threats.filter((t) => t.severity === "medium").length,
     low: threats.filter((t) => t.severity === "low").length,
   };
-  const total = threats.length;
-
+  const total = threats.length; // total threat number
+// counts the threats by affected componens
+//then that object into an array of [component, count] 
+// then sorts it by count so the most affected components are at the top of the list
   const targets = Object.entries(
     threats.reduce((a, t) => ({ ...a, [t.component_affected || "Other"]: (a[t.component_affected || "Other"] || 0) + 1 }), {} as Record<string, number>)
   ).sort((a, b) => b[1] - a[1]);
@@ -103,7 +109,7 @@ export default function DashboardPage() {
     else cvssBuckets[4]++;
   });
 
-  // Build source counts for the source breakdown donut
+  // Build source counts for the source to see how many threats came from each source
   const sourceCounts = Object.entries(
     threats.reduce((a, t) => ({ ...a, [t.source || "Unknown"]: (a[t.source || "Unknown"] || 0) + 1 }), {} as Record<string, number>)
   ).sort((a, b) => b[1] - a[1]);
@@ -111,6 +117,7 @@ export default function DashboardPage() {
   // Build component counts for the horizontal bar chart
   const componentCounts = targets.slice(0, 6);
 
+  // Everything belwo is visual board layout and styling
   return (
     <div>
       <h1 className="text-[20px] font-semibold text-white tracking-tight mb-5">Dashboard</h1>
@@ -137,7 +144,7 @@ export default function DashboardPage() {
         <div className="col-span-8">
           <Card className="h-full">
             <div className="flex items-center justify-between">
-              <CHeader title="Recent Threats" />
+              <CHeader title="Recently found threats" />
               <Link href="/threats" className="text-[10px] text-violet-400/60 hover:text-violet-400 transition font-medium">View all →</Link>
             </div>
             <div className="mt-3">
@@ -266,7 +273,7 @@ export default function DashboardPage() {
         {/* Quick Actions */}
         <div className="col-span-4">
           <Card className="h-full">
-            <CHeader title="Quick Actions" />
+            <CHeader title="analyst tools" />
             <div className="grid grid-cols-1 gap-3 mt-3">
               <ScanButton />
               <Link href="/reports" className="group relative overflow-hidden rounded-xl p-4 transition hover:scale-[1.01]" style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.1), rgba(167,139,250,0.04))", border: "1px solid rgba(124,58,237,0.1)" }}>
@@ -284,7 +291,7 @@ export default function DashboardPage() {
               <Link href="/threats" className="group relative overflow-hidden rounded-xl p-4 transition hover:scale-[1.01]" style={{ background: "linear-gradient(135deg, rgba(244,63,94,0.08), rgba(251,113,133,0.03))", border: "1px solid rgba(244,63,94,0.08)" }}>
                 <div className="absolute top-0 right-0 w-20 h-20 rounded-full bg-rose-500/5 -translate-y-6 translate-x-6" />
                 <span className="text-lg mb-2 block">⚠️</span>
-                <p className="text-[12px] text-white font-medium">Full Threat Feed</p>
+                <p className="text-[12px] text-white font-medium">Threats</p>
                 <p className="text-[10px] text-gray-600 mt-0.5">All identified vulnerabilities</p>
               </Link>
             </div>
@@ -295,6 +302,7 @@ export default function DashboardPage() {
   );
 }
 
+// This converts servitry levels to hex colors, used in things like the timeline,servity colours and other styles elemets
 /* ── Helper: severity → hex color ── */
 function sevColor(sev: string): string {
   const m: Record<string, string> = { critical: "#f43f5e", high: "#f97316", medium: "#f59e0b", low: "#10b981" };
@@ -303,14 +311,17 @@ function sevColor(sev: string): string {
 
 /* ── Shared presentational components ── */
 
+// card wrapper throughout the dashboard 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <div className={`bg-[#0b1023] border border-white/[0.04] rounded-xl p-5 ${className}`}>{children}</div>;
 }
 
+//section titles
 function CHeader({ title }: { title: string }) {
   return <p className="text-[13px] font-medium text-white">{title}</p>;
 }
 
+// Gradient summarty of the cards 
 function GCard({ label, value, sub, grad }: { label: string; value: number; sub: string; grad: string }) {
   return (
     <div className={`relative overflow-hidden rounded-xl p-4 bg-gradient-to-br ${grad}`}>
@@ -325,6 +336,7 @@ function GCard({ label, value, sub, grad }: { label: string; value: number; sub:
   );
 }
 
+//colored servertiy badge
 function Pill({ sev }: { sev: string }) {
   const m: Record<string, string> = {
     critical: "bg-rose-500/10 text-rose-400 border-rose-500/15",
@@ -335,6 +347,7 @@ function Pill({ sev }: { sev: string }) {
   return <span className={`${m[sev]} border px-1.5 py-px rounded text-[9px] font-semibold uppercase tracking-wider`}>{sev}</span>;
 }
 
+//small progress bar for CVSS scores 
 function CvssBar({ score }: { score: number }) {
   const c = score >= 9 ? "#f43f5e" : score >= 7 ? "#f97316" : score >= 4 ? "#f59e0b" : "#10b981";
   return (
