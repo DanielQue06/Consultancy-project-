@@ -1,21 +1,9 @@
-# report_generator.py
 
-# BorgWarner Cyber Dashboard - HTML Weekly Report Generator
-# Put this in report_generator/ folder
-
-import os
-from datetime import datetime, timedelta
-from jinja2 import Template
-from shared.database import get_threats_for_week, get_weekly_stats
-from scraper.config import REPORT_OUTPUT_DIR
-
-
-HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>BorgWarner Cyber Threat Report - Week {{ week_number }}</title>
+    <title>BorgWarner Cyber Threat Report - Week 14</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -208,30 +196,30 @@ HTML_TEMPLATE = """
         <!-- Header -->
         <div class="header">
             <h1>BorgWarner Cybersecurity Threat Report</h1>
-            <p>Week {{ week_number }} &nbsp;|&nbsp; {{ week_start }} to {{ week_end }}</p>
-            <p class="subtitle">Generated: {{ generated_at }} &nbsp;|&nbsp; Source: NVD + CISA KEV &nbsp;|&nbsp; Confirmed Exploits Only</p>
+            <p>Week 14 &nbsp;|&nbsp; 2025-03-30 to 2026-03-30</p>
+            <p class="subtitle">Generated: 2026-03-30 16:06 &nbsp;|&nbsp; Source: NVD + CISA KEV &nbsp;|&nbsp; Confirmed Exploits Only</p>
         </div>
 
         <!-- Summary Stats -->
         <div class="stats-grid">
             <div class="stat-card total">
-                <div class="number">{{ stats.total }}</div>
+                <div class="number">0</div>
                 <div class="label">Total Threats</div>
             </div>
             <div class="stat-card critical">
-                <div class="number">{{ stats.critical }}</div>
+                <div class="number">0</div>
                 <div class="label">Critical</div>
             </div>
             <div class="stat-card high">
-                <div class="number">{{ stats.high }}</div>
+                <div class="number">0</div>
                 <div class="label">High</div>
             </div>
             <div class="stat-card medium">
-                <div class="number">{{ stats.medium }}</div>
+                <div class="number">0</div>
                 <div class="label">Medium</div>
             </div>
             <div class="stat-card low">
-                <div class="number">{{ stats.low }}</div>
+                <div class="number">0</div>
                 <div class="label">Low</div>
             </div>
         </div>
@@ -239,81 +227,11 @@ HTML_TEMPLATE = """
         <!-- Threats Table -->
         <h2 class="section-title">Confirmed Exploited Vulnerabilities</h2>
 
-        {% if threats %}
-        <table class="threats-table">
-            <thead>
-                <tr>
-                    <th>Severity</th>
-                    <th>CVE ID</th>
-                    <th>CVSS</th>
-                    <th>Component</th>
-                    <th>Ransomware</th>
-                    <th>Source</th>
-                    <th>Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for threat in threats %}
-                <tr>
-                    <td><span class="severity-badge severity-{{ threat.severity }}">{{ threat.severity }}</span></td>
-                    <td><a href="https://nvd.nist.gov/vuln/detail/{{ threat.cve_id }}" target="_blank">{{ threat.cve_id }}</a></td>
-                    <td>
-                        {% if threat.cvss_score >= 9.0 %}
-                            <span class="cvss-score cvss-critical">{{ threat.cvss_score }}</span>
-                        {% elif threat.cvss_score >= 7.0 %}
-                            <span class="cvss-score cvss-high">{{ threat.cvss_score }}</span>
-                        {% elif threat.cvss_score >= 4.0 %}
-                            <span class="cvss-score cvss-medium">{{ threat.cvss_score }}</span>
-                        {% else %}
-                            <span class="cvss-score cvss-low">{{ threat.cvss_score }}</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ threat.component_affected }}</td>
-                    <td>
-                        {% if threat.exploiter_type == 'ransomware_group' %}
-                            <span class="ransomware-badge ransomware-yes">Yes</span>
-                        {% else %}
-                            <span class="ransomware-badge ransomware-no">No</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ threat.source }}</td>
-                    <td>{{ threat.date_published or threat.date_scraped[:10] }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-        <!-- Detailed Cards for Critical & High -->
-        <h2 class="section-title">Critical & High Threat Details</h2>
-
-        {% for threat in threats %}
-            {% if threat.severity in ['critical', 'high'] %}
-            <div class="threat-card card-{{ threat.severity }}">
-                <h3>
-                    <span class="severity-badge severity-{{ threat.severity }}">{{ threat.severity }}</span>
-                    &nbsp; {{ threat.cve_id }}
-                </h3>
-                <p>{{ threat.description[:500] }}{% if threat.description|length > 500 %}...{% endif %}</p>
-                <div class="threat-meta">
-                    <span><strong>CVSS:</strong> {{ threat.cvss_score }}</span>
-                    <span><strong>Component:</strong> {{ threat.component_affected }}</span>
-                    <span><strong>Keywords:</strong> {{ threat.matched_keywords }}</span>
-                    <span><strong>Published:</strong> {{ threat.date_published or 'N/A' }}</span>
-                    <span>
-                        <a href="https://nvd.nist.gov/vuln/detail/{{ threat.cve_id }}" target="_blank">
-                            View on NVD &rarr;
-                        </a>
-                    </span>
-                </div>
-            </div>
-            {% endif %}
-        {% endfor %}
-
-        {% else %}
+        
         <div class="no-threats">
             No confirmed exploited vulnerabilities matching BorgWarner products found this week.
         </div>
-        {% endif %}
+        
 
         <!-- Data Sources -->
         <div class="sources">
@@ -337,60 +255,3 @@ HTML_TEMPLATE = """
     </div>
 </body>
 </html>
-"""
-
-
-def generate_html_report(week_start=None, week_end=None):
-    """Generate a weekly HTML report."""
-    if not week_end:
-        week_end = datetime.now()
-    if not week_start:
-        week_start = week_end - timedelta(days=365)
-
-    start_str = week_start.strftime("%Y-%m-%d") + "T00:00:00"
-    end_str = week_end.strftime("%Y-%m-%d") + "T23:59:59"
-
-    # Clean dates for filename (no colons)
-    filename_date = week_end.strftime("%Y-%m-%d")
-
-    threats = get_threats_for_week(start_str, end_str)
-    stats = get_weekly_stats(start_str, end_str)
-    week_number = week_end.isocalendar()[1]
-
-    template = Template(HTML_TEMPLATE)
-    html_content = template.render(
-        week_number=week_number,
-        week_start=week_start.strftime("%Y-%m-%d"),
-        week_end=week_end.strftime("%Y-%m-%d"),
-        generated_at=datetime.now().strftime("%Y-%m-%d %H:%M"),
-        stats=stats,
-        threats=[dict(t) for t in threats],
-    )
-
-    os.makedirs(REPORT_OUTPUT_DIR, exist_ok=True)
-    filename = f"threat_report_week{week_number}_{filename_date}.html"
-    filepath = os.path.join(REPORT_OUTPUT_DIR, filename)
-
-    with open(filepath, "w", encoding="utf-8") as f:
-        f.write(html_content)
-
-    print(f"[+] HTML report generated: {filepath}")
-    return filepath
-
-
-def generate_full_report(days_back=30):
-    """Generate a report covering a custom date range."""
-    week_end = datetime.now()
-    week_start = week_end - timedelta(days=days_back)
-    return generate_html_report(week_start=week_start, week_end=week_end)
-
-
-if __name__ == "__main__":
-    import sys
-
-    if len(sys.argv) > 1 and sys.argv[1] == "--full":
-        print("Generating full 30-day report...")
-        generate_full_report(days_back=30)
-    else:
-        print("Generating weekly report...")
-        generate_html_report()
