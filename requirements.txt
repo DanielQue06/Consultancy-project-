@@ -6,3 +6,7 @@ pandas==2.2.0
 schedule==1.2.1
 matplotlib==3.8.3
 nvdlib==0.7.7
+fastapi
+uvicorn[standard]
+chromadb
+ollama
