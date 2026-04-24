@@ -1,4 +1,4 @@
-// This is the start of the dahsboard
+// This is the start of the dahsboard 
 import path from "path";
 import Database from "better-sqlite3";
 import ThreatDonut from "./components/ThreatDonut";
@@ -24,14 +24,14 @@ interface Threat {
   exploit_confirmed: number;
 }
 
-//This function first tries to find threats in the real database
-// If that doesnt work, it will fallback onto the fake data
+//This function first tries to find threats in the real database 
+// If that doesnt work, it will fallback onto the fake data 
 function getThreats(): Threat[] {
   const dbPath = path.join(process.cwd(), "..", "..", "shared", "borgwarner_threats.db");
   try {
     const db = new Database(dbPath, { readonly: true });
     const rows = db.prepare(
-      `SELECT * FROM threats ORDER BY
+      `SELECT * FROM threats ORDER BY 
         CASE severity WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 ELSE 5 END,
         date_scraped DESC`
     ).all() as Threat[];

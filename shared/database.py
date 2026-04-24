@@ -5,7 +5,7 @@ from scraper.config import DATABASE_PATH
 
 
 def init_db():
-    """Create the database and tables if they don't exist."""
+   # Create the database and tables if they don't exist.
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
 
@@ -70,7 +70,7 @@ def init_db():
 
 
 def insert_threat(threat_data):
-    """Insert a new threat into the database. Skips duplicates."""
+    # Insert a single threat record into the threats table.
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
 
@@ -119,10 +119,11 @@ def insert_threat(threat_data):
 
 
 def log_scrape(source, total_found, matched, exploited, status):
-    """Log a scraping session."""
+   #Log a scraping session
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
 
+    # helps to avoid sql injection
     cursor.execute('''
         INSERT INTO scrape_log (source, timestamp, total_found, matched, exploited, status)
         VALUES (?, ?, ?, ?, ?, ?)
@@ -133,7 +134,7 @@ def log_scrape(source, total_found, matched, exploited, status):
 
 
 def get_threats_by_severity(severity=None):
-    """Get threats filtered by severity. If None, returns all."""
+    # return confiremed threat with serverity
     conn = sqlite3.connect(DATABASE_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -154,7 +155,7 @@ def get_threats_by_severity(severity=None):
 
 
 def get_threats_for_week(start_date, end_date):
-    """Get all confirmed exploit threats within a date range."""
+   #Get all confirmed exploit threats within a date range.
     conn = sqlite3.connect(DATABASE_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -180,7 +181,7 @@ def get_threats_for_week(start_date, end_date):
 
 
 def get_weekly_stats(start_date, end_date):
-    """Get summary statistics for a given week."""
+    #Get summary statistics for a given date
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
 
@@ -200,7 +201,6 @@ def get_weekly_stats(start_date, end_date):
 
     conn.close()
     return stats
-
 
 if __name__ == "__main__":
     init_db()

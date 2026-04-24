@@ -1,8 +1,7 @@
 # report_generator.py
-# ============================================================
+
 # BorgWarner Cyber Dashboard - HTML Weekly Report Generator
 # Put this in report_generator/ folder
-# ============================================================
 
 import os
 from datetime import datetime, timedelta
@@ -346,30 +345,30 @@ def generate_html_report(week_start=None, week_end=None):
     if not week_end:
         week_end = datetime.now()
     if not week_start:
-        week_start = week_end - timedelta(days=365)  # Look back up to a year
+        week_start = week_end - timedelta(days=365)
 
-    start_str = week_start.strftime("%Y-%m-%d")
-    end_str = week_end.strftime("%Y-%m-%d")
+    start_str = week_start.strftime("%Y-%m-%d") + "T00:00:00"
+    end_str = week_end.strftime("%Y-%m-%d") + "T23:59:59"
 
-    # Get data from database
+    # Clean dates for filename (no colons)
+    filename_date = week_end.strftime("%Y-%m-%d")
+
     threats = get_threats_for_week(start_str, end_str)
     stats = get_weekly_stats(start_str, end_str)
     week_number = week_end.isocalendar()[1]
 
-    # Render template
     template = Template(HTML_TEMPLATE)
     html_content = template.render(
         week_number=week_number,
-        week_start=start_str,
-        week_end=end_str,
+        week_start=week_start.strftime("%Y-%m-%d"),
+        week_end=week_end.strftime("%Y-%m-%d"),
         generated_at=datetime.now().strftime("%Y-%m-%d %H:%M"),
         stats=stats,
         threats=[dict(t) for t in threats],
     )
 
-    # Save file
     os.makedirs(REPORT_OUTPUT_DIR, exist_ok=True)
-    filename = f"threat_report_week{week_number}_{end_str}.html"
+    filename = f"threat_report_week{week_number}_{filename_date}.html"
     filepath = os.path.join(REPORT_OUTPUT_DIR, filename)
 
     with open(filepath, "w", encoding="utf-8") as f:
