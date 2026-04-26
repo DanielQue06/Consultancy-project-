@@ -8,7 +8,7 @@ from chromadb.utils import embedding_functions
 import ollama
 
 # ── Config ───────────────────────────────────────────────────
-DB_PATH = r"C:\Projects\Consultancy-project-\shared\borgwarner_threats.db"
+DB_PATH    = r"C:\Projects\Consultancy-project-\shared\borgwarner_threats.db"
 CHROMA_DIR = os.path.join(os.path.dirname(__file__), "chroma_db")
 MODEL      = "llama3.2:3b"
 
@@ -38,60 +38,72 @@ class ChatRequest(BaseModel):
 @app.post("/chat")
 def chat(req: ChatRequest):
 
-    # Check if this is just a greeting — no need to search the DB for "hi"
+    # ── STEP 1: Check if greeting ──
     greetings = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "howdy"]
     is_greeting = req.message.strip().lower() in greetings
 
     if is_greeting:
-        # For greetings, don't bother searching ChromaDB
         context = ""
     else:
-        # Search ChromaDB for the most relevant threats
+        # ── STEP 2: Search ChromaDB for relevant threats ──
         results = get_collection().query(query_texts=[req.message], n_results=5)
         docs    = results["documents"][0] if results["documents"] else []
         context = "\n\n".join(docs) if docs else ""
 
-    # Check if the user is asking for a simpler explanation
-    # e.g. "I don't understand", "explain again", "what does that mean"
+    # ── STEP 3: Check if user wants simpler explanation ──
     rephrase_words = ["don't understand", "didnt understand", "didn't understand",
                       "explain again", "simpler", "what does that mean",
                       "too complicated", "confusing", "clarify", "not clear"]
     needs_rephrase = any(word in req.message.lower() for word in rephrase_words)
 
-    # Build the system prompt
-    system = f"""You are ARIA, the BorgWarner cybersecurity dashboard assistant.
+    # ── STEP 4: Build the system prompt ──
+    # This is INSIDE the chat function so needs_rephrase is available!
+    system = f"""You are the BorgWarner Help Chatbot, an enterprise-grade cybersecurity
+intelligence assistant for BorgWarner's Cyber Intelligence Dashboard.
 
-YOUR ONLY JOB:
-Answer questions about threats in the BorgWarner threat database.
-Nothing else. No exceptions.
+YOUR ROLE:
+Provide precise, professional threat intelligence based exclusively on
+BorgWarner's internal security database. You assist security analysts,
+engineers, and executives with actionable threat insights.
 
-HOW TO ANSWER:
-- Keep answers SHORT and SIMPLE — 3 to 5 lines maximum
-- Use plain English, not technical jargon
-- Always include: CVE ID, Severity, CVSS Score (if available in the data)
-- If exploit is confirmed, start your answer with: ⚠️ ACTIVE EXPLOIT
-- Never make up information — only use what is in the DATABASE CONTEXT
+RESPONSE GUIDELINES:
+- Respond in a professional, concise manner appropriate for enterprise security operations
+- Keep responses to 3-5 lines unless detail is specifically requested
+- Always include CVE ID, Severity level, and CVSS Score when available
+- Flag active exploits with: ⚠️ ACTIVE EXPLOIT CONFIRMED
+- Present data in a structured, readable format
+- Never include raw database notes like "(available in BorgWarner threat database)"
 
-IF THE USER DOES NOT UNDERSTAND (rephrase requested = {needs_rephrase}):
-- Explain the same information differently
-- Use a simpler analogy if helpful
-- Still keep it short
+HANDLING REPHRASE REQUESTS (rephrase requested = {needs_rephrase}):
+- Reframe the same intelligence using clearer terminology
+- Provide a brief analogy if it aids understanding
+- Maintain professional tone throughout
 
-IF GREETED (hi/hello/hey):
-- Reply in ONE line only: "Hello! I'm ARIA. Ask me about BorgWarner threats, CVEs, or exploits."
-- Nothing more
+GREETING RESPONSE:
+Reply with exactly one line:
+"Good day. I am the BorgWarner Help Chatbot. How may I assist you with threat intelligence today?"
 
-IF QUESTION IS NOT ABOUT BORGWARNER CYBERSECURITY:
-- Reply in ONE line only: "I only cover BorgWarner cybersecurity threats. Try asking about a CVE or threat."
-- Do not explain further, do not apologise repeatedly
+WHEN ASKED ABOUT A SPECIFIC COMPONENT OR SYSTEM (e.g. TC377, ECU, CAN Bus):
+- Search the available database context carefully for any related threats
+- If found: present the relevant threat intelligence professionally
+- If not found: respond with exactly:
+  "No threat intelligence records currently exist for that specific component
+   in the BorgWarner database. For further investigation, please consult
+   the BorgWarner security team or submit a formal threat assessment request."
+
+OUT OF SCOPE QUERIES:
+Respond with exactly:
+"This query falls outside the scope of BorgWarner's threat intelligence database.
+ Please direct general cybersecurity enquiries to the appropriate security team."
 
 DATABASE CONTEXT:
-{context if context else "No relevant threats found for this query."}"""
+{context if context else "No relevant threat records found for this query."}"""
 
+    # ── STEP 5: Stream the response from Ollama ──
     def stream():
         messages = [{"role": "system", "content": system}]
 
-        # Only include last 4 messages of history to keep context tight
+        # Only include last 4 messages of history
         for h in req.history[-4:]:
             messages.append(h)
 
@@ -120,11 +132,16 @@ def ingest():
 
         for row in rows:
             r = dict(row)
+
+            # Clean description — remove raw database notes
+            description = str(r.get('description', 'N/A'))
+            description = description.replace('(available in BorgWarner threat database)', '').strip()
+
             doc = f"""Title: {r.get('title','N/A')}
 CVE ID: {r.get('cve_id','N/A')}
 Severity: {r.get('severity','N/A')}
 CVSS Score: {r.get('cvss_score','N/A')}
-Description: {r.get('description','N/A')}
+Description: {description}
 Component Affected: {r.get('component_affected','N/A')}
 Source: {r.get('source','N/A')}
 Date Published: {r.get('date_published','N/A')}
@@ -148,7 +165,7 @@ Actor Country: {r.get('exploiter_country','N/A')}"""
         return {"status": "ok", "ingested": len(docs)}
 
     except Exception as e:
-        print(f"STATS ERROR: {e}")
+        print(f"INGEST ERROR: {e}")
         raise HTTPException(500, str(e))
 
 # ── Stats ────────────────────────────────────────────────────
@@ -171,6 +188,12 @@ def stats():
         }
     except Exception as e:
         raise HTTPException(500, str(e))
+
+@app.post("/generate-report")
+def generate_report():
+    from report_generator.report_generator import generate_html_report
+    generate_html_report()
+    return {"status": "ok"}
 
 # ── Run ──────────────────────────────────────────────────────
 if __name__ == "__main__":
